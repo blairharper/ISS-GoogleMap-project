@@ -1,0 +1,13 @@
+{
+  "name": "udacity-map-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Blair <blair.harper@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^4.1.1",
+    "jquery": "^3.3.1",
+    "knockout": "^3.4.2",
+    "popper.js": "^1.14.3"
+  }
+}

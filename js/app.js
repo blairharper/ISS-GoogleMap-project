@@ -2,8 +2,6 @@
 // by various parts of application.
 var map;
 var infoWindow;
-var issLat;
-var issLng;
 
 
 // Model
@@ -54,7 +52,7 @@ var Place = function(data) {
     this.lat = data.lat;
     this.lng = data.lng;
     this.LatLng = {lat: data.lat, lng: data.lng}
-
+    console.log(this.LatLng);
     // Get next ISS passing from open-notify API
     this.ISSdata = ko.observable(getISSdata(self));
 
@@ -68,22 +66,18 @@ var Place = function(data) {
 
 }
 
-var ISS = function() {
+var ISS = function(data) {
     var self = this;
-    this.name = "ISS";
-    this.LatLng = ko.observable(getISSloc(self));
-    console.log(this.LatLng());
-    this.marker = new google.maps.Marker({
-        position: this.LatLng,
-        title: this.name,
-        map: map
-    });
-    this.marker.setMap(map);
+    this.name = "ISS Current Location";
+    this.lat = data.lat;
+    this.lng = data.lng;
+    this.ISSdata = data.ISSdata;
+    this.marker = data.marker;
 }
 
 var viewModel = function() {
     var self = this;
-   
+    getISSloc(self);
     this.placeList = ko.observableArray([]);
     // Create a new instance of Place for each location
     // and store in ko observableArray
@@ -91,7 +85,6 @@ var viewModel = function() {
         self.placeList.push( new Place(placeItem) );
     });
     
-    this.placeList.push( new ISS() );
     this.currentPlace = ko.observable(this.placeList()[2]);
 
     // Add a listener to each marker that runs the
@@ -118,11 +111,13 @@ var viewMap = function() {
     this.LatLng = {lat: 51.5074, lng: 0.1278};
     map = new google.maps.Map(document.getElementById('map'), {
         center: this.LatLng,
+        title: "ISS Current Location",
         zoom: 6,
         mapTypeControl: false
     });
+    
+    ko.applyBindings(new viewModel());
 
- ko.applyBindings(new viewModel());
 }
 
 // Make the marker bounce a couple of times
@@ -137,20 +132,30 @@ function animate(marker) {
 }
 
 function getISSloc(self) {
+
     var api = "http://api.open-notify.org/iss-now.json";
     var request = api + "?callback=?";
-    var result;
+    var iss;
+    var issLat;
+    var issLng;
+    var issTime;
     $.getJSON(request).done(function(data) {
-        result = {
-                    
-                    lat: data.iss_position.latitude, 
-                    lng: data.iss_position.longitude
-                };
-            
-        self.LatLng(result);
-        console.log(self.LatLng());
+        issLat = parseFloat(data.iss_position.latitude);
+        issLng = parseFloat(data.iss_position.longitude);
+        issTime = new Date(data.timestamp*1000);
+        iss = {
+            lat: issLat,
+            lng: issLng,
+            ISSdata: issTime,
+            marker: new google.maps.Marker({
+                position: {lat: issLat, lng: issLng},
+                title: "ISS",
+                map: map
+            })
+        };
+        iss.marker.setMap(map);
+        self.placeList.push( new ISS(iss) );
     });
-     
 
 }
 

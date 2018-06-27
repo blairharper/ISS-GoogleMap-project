@@ -1,7 +1,7 @@
 // Global variables to allow updating of map elements
 // by various parts of application.
 var map;
-var infoWindow;
+var infoContent;
 
 
 // Model
@@ -52,7 +52,6 @@ var Place = function(data) {
     this.lat = data.lat;
     this.lng = data.lng;
     this.LatLng = {lat: data.lat, lng: data.lng}
-    console.log(this.LatLng);
     // Get next ISS passing from open-notify API
     this.ISSdata = ko.observable(getISSdata(self));
 
@@ -69,10 +68,10 @@ var Place = function(data) {
 var ISS = function(data) {
     var self = this;
     this.name = "ISS Current Location";
-    this.lat = data.lat;
-    this.lng = data.lng;
     this.ISSdata = data.ISSdata;
     this.marker = data.marker;
+    this.infoWindow = data.infoWindow;
+    
 }
 
 var viewModel = function() {
@@ -99,8 +98,14 @@ var viewModel = function() {
     // Sets currentPlace to the clicked list item
     // or clicked marker and animates relevant marker
     this.setPlace = function(clickedPlace) {
-        self.currentPlace(clickedPlace);
-        animate(self.currentPlace().marker);
+        if (self.currentPlace().infoWindow) {
+            self.currentPlace().infoWindow.close();
+            self.currentPlace(clickedPlace);
+            animate(self.currentPlace().marker);
+            self.currentPlace().infoWindow.open(map, self.currentPlace().marker);
+        } else {
+            alert("Too fast! We're still loading data, please wait a second and try again.");
+        }
     };
 
 }
@@ -116,7 +121,7 @@ var viewMap = function() {
         mapTypeControl: false
     });
     
-    ko.applyBindings(new viewModel());
+   ko.applyBindings(new viewModel());
 
 }
 
@@ -131,36 +136,9 @@ function animate(marker) {
     map.panTo(marker.getPosition());
 }
 
-function getISSloc(self) {
-
-    var api = "http://api.open-notify.org/iss-now.json";
-    var request = api + "?callback=?";
-    var iss;
-    var issLat;
-    var issLng;
-    var issTime;
-    $.getJSON(request).done(function(data) {
-        issLat = parseFloat(data.iss_position.latitude);
-        issLng = parseFloat(data.iss_position.longitude);
-        issTime = new Date(data.timestamp*1000);
-        iss = {
-            lat: issLat,
-            lng: issLng,
-            ISSdata: issTime,
-            marker: new google.maps.Marker({
-                position: {lat: issLat, lng: issLng},
-                title: "ISS",
-                map: map
-            })
-        };
-        iss.marker.setMap(map);
-        self.placeList.push( new ISS(iss) );
-    });
-
-}
-
-// Use open notify API to get ISS crossing info
+// Use open notify API to get ISS crossing info 
 // Returns a date: Ddd mmm dd hh:mm:ss timezone
+// Also updates infowindow for relevant marker
 function getISSdata(self) {
     var api = "http://api.open-notify.org/iss-pass.json"; 
     // Need to add a callback to ? so that request is sent JSONP
@@ -169,8 +147,97 @@ function getISSdata(self) {
     var request = api + "?lat=" + self.lat + "&lon=" + self.lng + "&callback=?";
     var result;
      $.getJSON(request).done(function(data) {
-        result = data.response[0].risetime;
-        self.ISSdata(new Date(result*1000));
+        result = new Date(data.response[0].risetime*1000);
+            var contentString = '<div id="content">'+
+            '<div id="siteNotice">'+
+            '<h1 id=firstHeading" class="firstHeading">'+self.name()+'</h1>'+
+            '<div id="bodyContent"'+
+            '<p>Next ISS passing:<br>'+result+'</p>'+
+            '<p> Attribution: <a href="http://open-notify.org">http://open-notify.org</a></p>'+
+            '</div>'+
+            '</div>';
+        self.infoWindow = new google.maps.InfoWindow({
+            content: contentString
+        });            
+        self.ISSdata(result);
      });
 }
 
+// Use open notify API to get current ISS location
+// Creates a new instance of object ISS and adds to placeList
+// Also adds map marker
+function getISSloc(self) {
+    var api = "http://api.open-notify.org/iss-now.json";
+    // Need to add a callback to ? so that request is sent JSONP
+    // otherwise browser security features will block the request
+    var request = api + "?callback=?";
+    // Load geocoder so we can reverse geocode the coordinates
+    // and provide user-friendly place name instead of just coords.
+    var geocoder = new google.maps.Geocoder;
+    var iss, issLat, issLng, issTime, issLocation, contentString;
+
+    // Send api request
+    $.getJSON(request).done(function(data) {
+        // Parse response and store in readable variables
+        issLat = parseFloat(data.iss_position.latitude);
+        issLng = parseFloat(data.iss_position.longitude);
+        issLatLng = {lat: issLat, lng: issLng};
+        issTime = new Date(data.timestamp*1000);
+        
+        // Initialise geocoder passing in lat + lng from API
+        geocoder.geocode({'location' : issLatLng}, function(results, status) {
+            if (status === 'OK') {
+                // Proceed if all went OK.
+                if(results[0]) {
+                    // Proceed if geocoder could provide results for this location
+                    // Store the address for passing to modelView later
+                    issLocation = results[0].formatted_address;
+                    // Populate infoWindow with results
+                    contentString = '<div id="content">'+
+                    '<div id="siteNotice">'+
+                    '<h1 id=firstHeading" class="firstHeading">'+issLocation+'</h1>'+
+                    '<div id="bodyContent"'+
+                    '<h3> The ISS is currently passing over :</h3><br>'+issLocation+
+                    '<p> Attribution: <a href="http://open-notify.org">http://open-notify.org</a></p>'+
+                    '</div>'+
+                    '</div>';
+                    iss.infoWindow.setContent(contentString);
+                } else {
+                    // If no resulsts were available update infoWindow
+                    contentString = 'No information available about this location.';
+                    iss.infoWindow.setContent(contentString);
+                }
+            } else {
+                // If an error occurred update infoWindow.
+                // Sometimes the geocoder also provides this response if
+                // no results were available but 'status' explains to user.
+                contentString = 'Failed to retrieve information: ' + status;
+                iss.infoWindow.setContent(contentString);
+            }  
+        });
+        
+        // Bundle our ISS data together
+        iss = {
+                ISSdata: issTime,
+                address: issLocation,
+                marker: new google.maps.Marker({
+                            position: issLatLng,
+                            title: "ISS",   
+                            map: map
+                        }),
+                infoWindow: new google.maps.InfoWindow({
+                            content: "TEST"
+                        })
+            
+        };
+        // Place marker for current ISS location on map
+        iss.marker.setMap(map);
+
+        // Push ISS data onto view model as an instance of ISS object
+        self.placeList.push( new ISS(iss) );
+    });
+
+}
+
+
+ 

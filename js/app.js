@@ -140,7 +140,7 @@ var viewModel = function() {
 var viewMap = function() {
     this.googleError = ko.observable(false);
     this.LatLng = {lat: 51.5074, lng: 0.1278};
-    map = new google.maps.Map(document.getElementById('map'), {
+     map = new google.maps.Map(document.getElementById('map'), {
         center: this.LatLng,
         title: "ISS Current Location",
         zoom: 6,

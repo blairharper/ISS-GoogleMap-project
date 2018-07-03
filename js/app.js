@@ -140,7 +140,8 @@ var viewModel = function() {
 var viewMap = function() {
     this.googleError = ko.observable(false);
     this.LatLng = {lat: 51.5074, lng: 0.1278};
-     map = new google.maps.Map(document.getElementById('map'), {
+
+    map = new google.maps.Map(document.getElementById('map'), {
         center: this.LatLng,
         title: "ISS Current Location",
         zoom: 6,
@@ -148,9 +149,7 @@ var viewMap = function() {
     });
 
    ko.applyBindings(new viewModel());
-
 }
-
 
 // Called if there is an error reaching google maps API
 var mapError = function() {
@@ -243,7 +242,6 @@ function getISSdata(self, open=0) {
             '<h2 id=firstHeading" class="firstHeading">'+self.name()+'</h2>'+
             '<div id="bodyContent"'+
             '<p>Next ISS passing:<br>'+result+'</p>'+
-            '<p> Attribution: <a href="http://open-notify.org">http://open-notify.org</a></p>'+
             '</div>'+
             '</div>';
         if(!nomap) { self.infoWindow = new google.maps.InfoWindow({

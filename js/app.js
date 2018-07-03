@@ -85,6 +85,7 @@ var ISS = function(data) {
 
 var viewModel = function() {
     var self = this;
+    var geocoder = new google.maps.Geocoder();
 
     this.placeList = ko.observableArray([]);
     // Create a new instance of Place for each location
@@ -109,6 +110,9 @@ var viewModel = function() {
             });
 
         });
+        document.getElementById('submit').addEventListener('click', function() {
+             geocodeAddress(geocoder, map, self);
+        });
     }
     // Filter handler
     self.searchPlaces = ko.observable('');
@@ -116,30 +120,18 @@ var viewModel = function() {
         return ko.utils.arrayFilter(self.placeList(), function (key) {
             var results = (self.searchPlaces().length == 0 || key.name().toLowerCase().indexOf(self.searchPlaces().toLowerCase()) > -1);
             // Make the markers visible for all filteredRecords that are returned
-            if (!nomap) { key.marker.setVisible(results)};
+            if (!nomap) {
+                key.marker.setVisible(results);
+
+                }
             return results;
         });
     });
     // Sets currentPlace to the clicked item
     // Animates relevant marker and loads window box
-    this.setPlace = function(clickedPlace) {
-        // Make sure infoboxes have finished loading before running
-        if (self.currentPlace().infoWindow) {
-            // Close any open window boxes
-            self.currentPlace().infoWindow.close();
-            // Set currentPlace and animate marker
-            self.currentPlace(clickedPlace);
-            animate(self.currentPlace().marker);
-            // Open relevant window box
-            self.currentPlace().infoWindow.open(map, self.currentPlace().marker);
-        } else {
-            if (!nomap) {
-                alert("Too fast! We're still loading data (or an error occurred), please try again in a couple of seconds.");
-            } else {
-                self.currentPlace(clickedPlace);
-            }
-        }
-    };
+    this.setPlace = function(clickedPlace, currentPlace) {
+       setCurrentPlace(clickedPlace, self.currentPlace);
+    }
 
 }
 
@@ -174,6 +166,52 @@ var mapError = function() {
     ko.applyBindings(new viewModel());
 }
 
+// Set current place
+
+function setCurrentPlace(clickedPlace, currentPlace) {
+
+    if (currentPlace().infoWindow) {
+        // Close any open window boxes
+        currentPlace().infoWindow.close()
+    }
+    // Set currentPlace and animate marker
+    currentPlace(clickedPlace);
+    animate(currentPlace().marker);
+
+    // Open relevant window box
+    if (currentPlace().infoWindow) {
+        currentPlace().infoWindow.open(map, currentPlace().marker);
+    } else {
+        getISSdata(currentPlace(), 1);
+    }
+}
+
+
+function geocodeAddress(geocoder, resultsMap, self) {
+var address = document.getElementById('address').value;
+geocoder.geocode({'address': address}, function(results, status) {
+  if (status === 'OK') {
+    resultsMap.setCenter(results[0].geometry.location);
+
+    resultData = {
+        name: results[0].formatted_address,
+        address: results[0].formatted_address,
+        lat: results[0].geometry.location.lat(),
+        lng: results[0].geometry.location.lng()
+    }
+    self.placeList.push( new Place(resultData) );
+
+    var getPos = self.placeList().length - 1;
+    setCurrentPlace(self.placeList()[getPos], self.currentPlace);
+    self.placeList()[getPos].marker.addListener('click', function() {
+        self.setPlace(place);
+        });
+
+  } else {
+    alert('Geocode was not successful for the following reason: ' + status);
+  }
+});
+}
 
 // Make the marker bounce a couple of times
 function animate(marker) {
@@ -188,11 +226,10 @@ function animate(marker) {
     }
 }
 
-
 // Use open notify API to get ISS crossing info
 // Returns a date: Ddd mmm dd hh:mm:ss timezone
 // Also updates infowindow for relevant marker
-function getISSdata(self) {
+function getISSdata(self, open=0) {
 
     var api = "http://api.open-notify.org/iss-pass.json";
     // Need to add a callback to ? so that request is sent JSONP
@@ -213,6 +250,9 @@ function getISSdata(self) {
             content: contentString
         })};
         self.ISSdata(result);
+        if (open == 1) {
+            self.infoWindow.open(map, self.marker);
+        }
      });
 }
 
@@ -262,19 +302,22 @@ function getISSloc(self) {
                     }
                 } else {
                     // If no results were available update infoWindow
-                    contentString = 'No information available about this location.';
+                    issLocation = 'No information available about this location.';
+                    contentString = issLocation;
                 }
                 } else {
                 if (status === 'ZERO_RESULTS') {
-                    contentString = 'No land data, probably over the sea.'
+                    issLocation = 'No land data, probably over the sea.'
+                    contentString = issLocation;
                 } else {
-                    contentString = 'An error occurred: ' + status
+                    issLocation = 'An error occurred: ' + status
+                    contentString = issLocation;
                 }
             if(!nomap){iss.infoWindow.setContent(contentString)};
             }
         // Set info window content and update address
 
-        self.placeList()[5].address(contentString);
+        self.placeList()[5].address(issLocation);
         });
 
         // Bundle our ISS data together

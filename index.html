@@ -7,8 +7,6 @@
     <title>ISS Location Map</title>
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
     <link rel="stylesheet" href="css/custom.css">
-
-
 </head>
 
 <body>
@@ -49,9 +47,6 @@
             <p> Sorry, we're having problems with reaching Google Maps right now. Please try later. </p>
     </div>
 
-
-    <script src="node_modules/knockout/build/output/knockout-latest.js"></script>
-    <script src="js/app.js"></script>
     <div id="map">
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAYzLRZ2pFf9T5nJVX6iafwdPizj2owiNs&callback=viewMap"
         onerror="mapError()"
@@ -63,6 +58,9 @@
         <span class="text-muted">This page uses the <a href='http://open-notify.org'>http://open-notify.org</a> API.</span>
       </div>
     </footer>
+
+    <script src="node_modules/knockout/build/output/knockout-latest.js"></script>
+    <script src="js/app.js"></script>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script src="node_modules/popper.js/dist/umd/popper.min.js"></script>
     <script src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>

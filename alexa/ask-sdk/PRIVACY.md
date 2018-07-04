@@ -23,9 +23,9 @@ An open-notify.org API is used to determine when the ISS will next pass over tho
 
 The skill does not and will not:
 
-*store your data, such as on a database
-*sell or rent your data to third parties
-*share your data with third parties for marketing purposes
+* store your data, such as on a database
+* sell or rent your data to third parties
+* share your data with third parties for marketing purposes
 
 ### How long the skill keeps your data
 

@@ -29,4 +29,4 @@ The skill does not and will not:
 
 ### How long the skill keeps your data
 
-Your data is not retained by the skill and is not passed to any blairdev.com servers.
+Your data is not retained by the skill and is not passed to any blairdev.com servers or any other databases or servers other than those mentioned above.

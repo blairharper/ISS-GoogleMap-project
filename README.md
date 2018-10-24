@@ -1,4 +1,4 @@
-# Udacity Map Project
+# ISS Google Map Project
 
 Map project that provides information on the next ISS crossing of 5 set locations, as well as the current location of the ISS. This information is shown on a map which is rendered using the google maps API. ISS data is provided using the open-notify.org API.
 
